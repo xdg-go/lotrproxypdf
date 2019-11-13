@@ -8,6 +8,26 @@ See the article, [Go as glue: JSON + XML + PNG =
 PDF](https://xdg.me/blog/go-as-glue-json-xml-png-pdf/), for motivation and a
 description of the implementation.
 
+# Installation
+
+`lotrproxypdf` requires Go 1.13 or later.  From outside any existing Go
+project, run this command:
+
+```
+go get github.com/xdg-go/lotrproxypdf
+```
+
+# Usage
+
+`lotrproxypdf` takes two command line arguments.  The first is the file name
+of an OCTGN deck list file (typically downloaded from
+[RingsDB](https://ringsdb.com/decklists).  The second is the file name where
+the PDF file will be written:
+
+```
+lotrproxypdf mydeck.o8d mydeck.pdf
+```
+
 # Copyright and License
 
 Copyright 2019 by David A. Golden. All rights reserved.
