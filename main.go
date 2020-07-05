@@ -16,6 +16,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -262,7 +263,7 @@ func (app *App) PreloadImages() {
 
 func loadImageToCache(cache *configdir.Config, imageName string) error {
 	cachePath := filepath.Join(cacheImageFolder, imageName)
-	urlPath := ringsURL + filepath.Join(ringsImagePrefix, imageName)
+	urlPath := ringsURL + path.Join(ringsImagePrefix, imageName)
 
 	imageBytes, err := httpGetBytes(urlPath)
 	if err != nil {
