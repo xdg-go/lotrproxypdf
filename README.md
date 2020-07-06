@@ -14,7 +14,7 @@ description of the implementation.
 project, run this command:
 
 ```
-go get github.com/xdg-go/lotrproxypdf
+go get -u github.com/xdg-go/lotrproxypdf
 ```
 
 # Usage
