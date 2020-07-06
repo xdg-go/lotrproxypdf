@@ -1,4 +1,4 @@
-module github.com/xdg-go/cardproxypdf
+module github.com/xdg-go/lotrproxypdf
 
 go 1.13
 
