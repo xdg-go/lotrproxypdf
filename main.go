@@ -298,15 +298,17 @@ func (app *App) CreatePDF() {
 
 	pdf := gofpdf.New("P", "mm", "Letter", "")
 
-	app.err = addImagesToPdf(pdf, app.cache, app.deck)
+	var deck []XMLCard
+	deck, app.err = addImagesToPdf(pdf, app.cache, app.deck)
 	if app.err != nil {
 		return
 	}
 
-	app.err = renderPDF(pdf, app.deck, app.outputFile)
+	app.err = renderPDF(pdf, deck, app.outputFile)
 }
 
-func addImagesToPdf(pdf *gofpdf.Fpdf, cache *configdir.Config, deck []XMLCard) error {
+func addImagesToPdf(pdf *gofpdf.Fpdf, cache *configdir.Config, deck []XMLCard) ([]XMLCard, error) {
+	deckWithValidImages := make([]XMLCard, 0)
 	for _, card := range deck {
 		imageBytes, err := cache.ReadFile(filepath.Join(cacheImageFolder, card.ImagePath))
 		if err != nil {
@@ -314,28 +316,31 @@ func addImagesToPdf(pdf *gofpdf.Fpdf, cache *configdir.Config, deck []XMLCard) e
 				log.Println("no cached image for", card.Card, "(skipping it)")
 				continue
 			} else {
-				return err
+				return nil, err
 			}
 		}
-		imageOpts, err := getImageOptions(imageBytes)
-		if err != nil {
-			return err
+		imageOpts := getImageOptions(imageBytes, card)
+		if (imageOpts == gofpdf.ImageOptions{}) {
+			_ = os.Remove(filepath.Join(cache.Path, cacheImageFolder, card.ImagePath))
+			continue
 		}
 		pdf.RegisterImageOptionsReader(card.ImagePath, imageOpts, bytes.NewReader(imageBytes))
+		deckWithValidImages = append(deckWithValidImages, card)
 	}
 
-	return nil
+	return deckWithValidImages, nil
 }
 
-func getImageOptions(bytes []byte) (gofpdf.ImageOptions, error) {
+func getImageOptions(bytes []byte, c XMLCard) gofpdf.ImageOptions {
 	mimeType := http.DetectContentType(bytes)
 	switch mimeType {
 	case "image/jpeg":
-		return gofpdf.ImageOptions{ImageType: "JPEG"}, nil
+		return gofpdf.ImageOptions{ImageType: "JPEG"}
 	case "image/png":
-		return gofpdf.ImageOptions{ImageType: "PNG"}, nil
+		return gofpdf.ImageOptions{ImageType: "PNG"}
 	default:
-		return gofpdf.ImageOptions{}, fmt.Errorf("unsupported image type: %s", mimeType)
+		log.Printf("unsupported image type for %s (%s): %s (skipping it)", c.ImagePath, c.Card, mimeType)
+		return gofpdf.ImageOptions{}
 	}
 }
 
