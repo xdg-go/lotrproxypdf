@@ -51,6 +51,7 @@ type App struct {
 }
 
 type XMLCard struct {
+	Card      string `xml:",chardata"`
 	Quantity  int    `xml:"qty,attr"`
 	OctgnID   string `xml:"id,attr"`
 	ImagePath string // filled in later from metadata
@@ -150,6 +151,9 @@ func convertRingsDataToMap(body []byte) (map[string]string, error) {
 
 	images := make(map[string]string)
 	for _, v := range cardList {
+		if v.ImageSrc == "" {
+			continue
+		}
 		images[v.ID] = strings.TrimPrefix(v.ImageSrc, ringsImagePrefix)
 	}
 
@@ -221,6 +225,10 @@ func (app *App) ParseInputFile() {
 	for _, section := range deck.Sections {
 		for _, card := range section.Cards {
 			card.ImagePath = app.octgnToImgName[card.OctgnID]
+			if card.ImagePath == "" {
+				log.Println("no image available for", card.Card, "(skipping it)")
+				continue
+			}
 			flat = append(flat, card)
 		}
 	}
@@ -283,6 +291,11 @@ func (app *App) CreatePDF() {
 		return
 	}
 
+	if len(app.deck) == 0 {
+		log.Println("no cards in the deck; will not create PDF")
+		return
+	}
+
 	pdf := gofpdf.New("P", "mm", "Letter", "")
 
 	app.err = addImagesToPdf(pdf, app.cache, app.deck)
@@ -297,7 +310,12 @@ func addImagesToPdf(pdf *gofpdf.Fpdf, cache *configdir.Config, deck []XMLCard) e
 	for _, card := range deck {
 		imageBytes, err := cache.ReadFile(filepath.Join(cacheImageFolder, card.ImagePath))
 		if err != nil {
-			return err
+			if os.IsNotExist(err) {
+				log.Println("no cached image for", card.Card, "(skipping it)")
+				continue
+			} else {
+				return err
+			}
 		}
 		imageOpts, err := getImageOptions(imageBytes)
 		if err != nil {
